@@ -1,0 +1,120 @@
+#include <iostream>
+#include <fstream>
+#include <list>
+#include <vector>
+#include <algorithm>
+#include <string>
+using namespace std;
+
+class Automobile {
+private:
+    string model_name;
+    double fuel_consumption[3]; 
+    int max_speed;
+    int power;
+
+public:
+    Automobile() : model_name(""), max_speed(0), power(0) {
+        fuel_consumption[0] = fuel_consumption[1] = fuel_consumption[2] = 0.0;
+    }
+
+    Automobile(string name, double highway, double city, double mixed, int speed, int pwr) 
+        : model_name(name), max_speed(speed), power(pwr) {
+        fuel_consumption[0] = highway;
+        fuel_consumption[1] = city;
+        fuel_consumption[2] = mixed;
+    }
+
+    Automobile(const Automobile& other) 
+        : model_name(other.model_name), max_speed(other.max_speed), power(other.power) {
+        fuel_consumption[0] = other.fuel_consumption[0];
+        fuel_consumption[1] = other.fuel_consumption[1];
+        fuel_consumption[2] = other.fuel_consumption[2];
+    }
+
+    Automobile& operator=(const Automobile& other) {
+        if (this != &other) {
+            model_name = other.model_name;
+            fuel_consumption[0] = other.fuel_consumption[0];
+            fuel_consumption[1] = other.fuel_consumption[1];
+            fuel_consumption[2] = other.fuel_consumption[2];
+            max_speed = other.max_speed;
+            power = other.power;
+        }
+        return *this;
+    }
+
+    Automobile(Automobile&& other) noexcept 
+        : model_name(move(other.model_name)), max_speed(other.max_speed), power(other.power) {
+        fuel_consumption[0] = other.fuel_consumption[0];
+        fuel_consumption[1] = other.fuel_consumption[1];
+        fuel_consumption[2] = other.fuel_consumption[2];
+    }
+
+    Automobile& operator=(Automobile&& other) noexcept {
+        if (this != &other) {
+            model_name = move(other.model_name);
+            fuel_consumption[0] = other.fuel_consumption[0];
+            fuel_consumption[1] = other.fuel_consumption[1];
+            fuel_consumption[2] = other.fuel_consumption[2];
+            max_speed = other.max_speed;
+            power = other.power;
+        }
+        return *this;
+    }
+
+    double get_mixed_consumption() const {
+        return fuel_consumption[2];
+    }
+
+    friend ostream& operator<<(ostream& os, const Automobile& car) {
+        os << "Модель: " << car.model_name 
+           << "\nРасход топлива (трасса/город/смешанный): " 
+           << car.fuel_consumption[0] << "/" << car.fuel_consumption[1] << "/" << car.fuel_consumption[2]
+           << "\nМаксимальная скорость: " << car.max_speed << " км/ч"
+           << "\nМощность: " << car.power << " л.с.\n";
+        return os;
+    }
+};
+
+void read_from_file(list<Automobile>& cars, const string& filename) {
+    ifstream input(filename);
+    if (!input) {
+        cerr << "Не удалось открыть файл " << filename << endl;
+        return;
+    }
+    string name;
+    double highway, city, mixed;
+    int speed, power;
+    while (input >> name >> highway >> city >> mixed >> speed >> power) {
+        cars.emplace_back(name, highway, city, mixed, speed, power);
+    }
+}
+
+void write_to_file(const string& message, const auto& container, ofstream& output) {
+    output << message << ":\n";
+    for (const auto& car : container) {
+        output << car << endl;
+    }
+    output << endl;
+}
+
+int main() {
+    list<Automobile> cars;
+    read_from_file(cars, "input.txt");
+    ofstream output("output.txt");
+    if (!output) {
+        cerr << "Не удалось создать файл output.txt" << endl;
+        return 1;
+    }
+    write_to_file("Исходный контейнер (list)", cars, output);
+    cars.sort([](const Automobile& a, const Automobile& b) {
+        return a.get_mixed_consumption() < b.get_mixed_consumption();
+    });
+
+    write_to_file("Контейнер после сортировки по смешанному расходу (list)", cars, output);
+    vector<Automobile> cars_vector;
+    copy(cars.begin(), cars.end(), back_inserter(cars_vector));
+    write_to_file("Контейнер после копирования в vector", cars_vector, output);
+    return 0;
+}
